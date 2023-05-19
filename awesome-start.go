@@ -37,8 +37,10 @@ func main() {
 			break
 		case 3:
 			task_admin.MarkTheTask()
+			break
 		case 4:
 			task_admin.DeleteTheTask()
+			break
 		case 5:
 			fmt.Println("\nI take my horse and leaving the town with the resolute farewells embracing the boundless horizons cowboy, adios fellas")
 			os.Exit(0)
