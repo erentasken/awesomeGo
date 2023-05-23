@@ -1,23 +1,17 @@
 package task_admin
 
 import (
+	"awesome-start/task_admin/db"
+	_ "awesome-start/task_admin/db"
 	"bufio"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var scanner = bufio.NewScanner(os.Stdin)
 var reader = bufio.NewReader(os.Stdin)
-var taskMap = make(map[int]Task)
-var taskId int = 1
-
-type Task struct {
-	TITLE       string
-	DESCRIPTION string
-	STATUS      string
-	TASKID      int
-}
 
 func DeleteTheTask() {
 	for {
@@ -29,48 +23,55 @@ func DeleteTheTask() {
 			continue
 		}
 
-		markId, err := strconv.Atoi(input)
+		taskID, err := strconv.Atoi(input)
 		if err != nil {
 			fmt.Println("Invalid input. Please enter a valid task ID.")
 			continue
 		}
 
-		if _, exist := taskMap[markId]; exist {
-			delete(taskMap, markId)
-			fmt.Println("\nTask deleted successfully!\n")
-			taskId--
-			break
-		} else {
-			fmt.Println("Task ID not found.\n")
+		err = db.DeleteTask(taskID)
+		if err != nil {
+			fmt.Println("Failed to delete the task:", err)
 			break
 		}
+
+		fmt.Println("\nTask deleted successfully!\n")
+		break
 	}
 }
 
 func MarkTheTask() {
 	for {
-		var markId int
 		fmt.Print("\nEnter the ID of the task to mark as completed: ")
 		scanner.Scan()
+		input := scanner.Text()
+		if input == "" {
+			fmt.Println("Invalid input. Please enter a valid task ID.")
+			continue
+		}
 
-		markId, err := strconv.Atoi(scanner.Text())
-
+		taskID, err := strconv.Atoi(input)
 		if err != nil {
 			fmt.Println("Invalid input. Please enter a valid task ID.")
 			continue
 		}
 
-		if task, exist := taskMap[markId]; exist {
-			task.STATUS = "Completed"
-			taskMap[markId] = task
-			fmt.Println("\nTask marked as completed successfully!\n")
-			break
-		} else {
-			fmt.Println("Task ID not found.\n")
+		task, err := db.GetTask(taskID)
+		if err != nil {
+			fmt.Println("Failed to retrieve the task:", err)
 			break
 		}
-	}
 
+		task.Status = "Completed"
+		err = db.UpdateTask(taskID, task)
+		if err != nil {
+			fmt.Println("Failed to update the task:", err)
+			break
+		}
+
+		fmt.Println("\nTask marked as completed successfully!\n")
+		break
+	}
 }
 
 func AddTask() {
@@ -80,44 +81,51 @@ func AddTask() {
 		fmt.Print("\nEnter the title of the task: ")
 		title, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Enter title properly. ")
+			fmt.Println("Enter title properly.")
 			continue
 		}
 		fmt.Print("Enter the description of the task: ")
 		desc, err = reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Enter desc properly. ")
+			fmt.Println("Enter desc properly.")
 			continue
 		}
 
-		task := Task{
-			title,
-			desc,
-			"Pending",
-			taskId,
+		task := db.Task{
+			Title:       strings.TrimSpace(title),
+			Description: strings.TrimSpace(desc),
+			Status:      "Pending",
 		}
 
-		taskMap[taskId] = task
+		err = db.AddTask(&task)
+		if err != nil {
+			fmt.Println("Failed to add the task:", err)
+			break
+		}
 
-		taskId++
 		fmt.Println("\nTask added successfully!\n")
 		break
 	}
-
 }
 
 func ViewTask() {
-	if taskId == 1 {
+	tasks, err := db.GetTasks()
+	if err != nil {
+		fmt.Println("Failed to retrieve tasks:", err)
+		return
+	}
+
+	if len(tasks) == 0 {
 		fmt.Println("\nNo tasks found!\n")
 		return
 	}
-	fmt.Println("\nTasks : \n")
 
-	for _, task := range taskMap {
-		fmt.Printf("Task ID: %d\n", task.TASKID)
-		fmt.Printf("Title: %s", task.TITLE)
-		fmt.Printf("Description: %s", task.DESCRIPTION)
-		fmt.Printf("Status: %s\n\n", task.STATUS)
+	fmt.Println("\nTasks:\n")
+
+	for _, task := range tasks {
+		fmt.Printf("Task ID: %d\n", task.TaskID)
+		fmt.Printf("Title: %s\n", task.Title)
+		fmt.Printf("Description: %s\n", task.Description)
+		fmt.Printf("Status: %s\n\n", task.Status)
 	}
-
 }
