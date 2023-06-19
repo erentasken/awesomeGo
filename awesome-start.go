@@ -4,11 +4,14 @@ import (
 	"awesome-start/task_admin"
 	"bufio"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"os"
 	"strconv"
+	"time"
 )
 
-func main() {
+func bench() {
+	time.Sleep(3000)
 	var scanner = bufio.NewScanner(os.Stdin)
 	fmt.Println("Welcome to the Task Manager!\n")
 	var choice int = -1
@@ -33,7 +36,7 @@ func main() {
 			task_admin.AddTask()
 			break
 		case 2:
-			task_admin.ViewTask()
+			task_admin.ViewTask(nil)
 			break
 		case 3:
 			task_admin.MarkTheTask()
@@ -49,4 +52,14 @@ func main() {
 			continue
 		}
 	}
+}
+
+func apiStart() {
+	app := fiber.New()
+	task_admin.Init(app)
+}
+
+func main() {
+	go apiStart()
+	bench()
 }
