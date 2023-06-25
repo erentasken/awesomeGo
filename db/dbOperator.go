@@ -1,4 +1,4 @@
-package task_admin
+package db
 
 import (
 	"context"
@@ -6,12 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"strings"
 )
-
-var collection *mongo.Collection
-var ctx = context.TODO()
 
 type Task struct {
 	TaskID      int    `bson:"taskid"`
@@ -20,7 +16,12 @@ type Task struct {
 	Status      string `bson:"status"`
 }
 
-func DbCreateTask(title string, desc string) *Task {
+type TaskBody struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+func CreateTask(title string, desc string) *Task {
 	return &Task{
 		Title:       strings.TrimSpace(title),
 		Description: strings.TrimSpace(desc),
@@ -28,24 +29,9 @@ func DbCreateTask(title string, desc string) *Task {
 	}
 }
 
-func init() {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		fmt.Println("Failed to connect to MongoDB:", err)
-		panic(err)
-	}
-
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	collection = client.Database("task_manager").Collection("tasks")
-}
-
-func getNextTaskID() int {
-	options := options.FindOne().SetSort(bson.M{"taskid": -1})
-	result := collection.FindOne(ctx, bson.M{}, options)
+func nextTaskID() int {
+	setSort := options.FindOne().SetSort(bson.M{"taskid": -1})
+	result := Collection.FindOne(Ctx, bson.M{}, setSort)
 	task := Task{}
 	err := result.Decode(&task)
 	if err == mongo.ErrNoDocuments {
@@ -58,10 +44,10 @@ func getNextTaskID() int {
 }
 
 func DbAddTask(task *Task) error {
-	taskID := getNextTaskID()
+	taskID := nextTaskID()
 	task.TaskID = taskID
 
-	_, err := collection.InsertOne(ctx, task)
+	_, err := Collection.InsertOne(Ctx, task)
 	if err != nil {
 		return err
 	}
@@ -72,7 +58,7 @@ func DbAddTask(task *Task) error {
 func DbDeleteTask(taskID int) error {
 	filter := bson.M{"taskid": taskID}
 
-	_, err := collection.DeleteOne(ctx, filter)
+	_, err := Collection.DeleteOne(Ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -85,7 +71,7 @@ func DbUpdateTask(taskID int, task Task) error {
 	filter := bson.M{"taskid": taskID}
 	update := bson.M{"$set": task}
 
-	_, err := collection.UpdateOne(ctx, filter, update)
+	_, err := Collection.UpdateOne(Ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -97,7 +83,7 @@ func DbGetTask(taskID int) (Task, error) {
 	filter := bson.M{"taskid": taskID}
 	var task Task
 
-	err := collection.FindOne(ctx, filter).Decode(&task)
+	err := Collection.FindOne(Ctx, filter).Decode(&task)
 	if err != nil {
 		return Task{}, err
 	}
@@ -108,13 +94,18 @@ func DbGetTask(taskID int) (Task, error) {
 func DbGetTasks() ([]Task, error) {
 	var tasks []Task
 
-	cursor, err := collection.Find(ctx, bson.M{})
+	cursor, err := Collection.Find(Ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		err := cursor.Close(ctx)
+		if err != nil {
 
-	for cursor.Next(ctx) {
+		}
+	}(cursor, Ctx)
+
+	for cursor.Next(Ctx) {
 		var task Task
 		err := cursor.Decode(&task)
 		if err != nil {
