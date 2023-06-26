@@ -21,13 +21,15 @@ func Routers(app *fiber.App) {
 
 func RequiredAuth() fiber.Handler {
 	return jwtware.New(jwtware.Config{
+		SigningMethod: "HS256",
+		SigningKey:    []byte(Auth.JwtSecret),
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized",
+				"errorCode": err.Error(),
+				"error":     "Unauthorized",
 			})
 			return nil
 		},
-		SigningKey: []byte(Auth.JwtSecret),
 	})
 }
 

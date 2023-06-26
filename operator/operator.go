@@ -83,5 +83,7 @@ func ViewTask(c *fiber.Ctx) error {
 		taskResponse.Tasks = append(taskResponse.Tasks, task)
 	}
 
+	c.JSON(taskResponse)
+
 	return nil
 }
