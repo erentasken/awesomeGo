@@ -44,6 +44,7 @@ func nextTaskID() int {
 }
 
 func DbAddTask(task *Task) error {
+	fmt.Print(" I am here")
 	taskID := nextTaskID()
 	task.TaskID = taskID
 
@@ -76,6 +77,7 @@ func DbUpdateTask(taskID int, task Task) error {
 		return err
 	}
 
+	return nil
 	return nil
 }
 

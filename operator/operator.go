@@ -2,6 +2,7 @@ package operator
 
 import (
 	"awesome-start/db"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -46,12 +47,13 @@ func MarkTask(c *fiber.Ctx) error {
 }
 
 func AddTask(c *fiber.Ctx) error {
+	fmt.Print(" I am here")
 	var body db.TaskBody
 	err := c.BodyParser(&body)
 	if err != nil {
 		return nil
 	}
-
+	fmt.Print(" I am here")
 	task := db.CreateTask(body.Title, body.Description)
 
 	err = db.DbAddTask(task)
@@ -68,12 +70,19 @@ type TaskResponse struct {
 }
 
 func ViewTask(c *fiber.Ctx) error {
+
 	tasks, err := db.DbGetTasks()
 	if err != nil {
-		return nil
+		return c.Status(400).JSON(fiber.Map{
+			"Error": err.Error(),
+		})
 	}
 
 	if len(tasks) == 0 {
+		err := c.Status(200).JSON("There is no task to be viewed.")
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -83,7 +92,5 @@ func ViewTask(c *fiber.Ctx) error {
 		taskResponse.Tasks = append(taskResponse.Tasks, task)
 	}
 
-	c.JSON(taskResponse)
-
-	return nil
+	return c.JSON(taskResponse)
 }
