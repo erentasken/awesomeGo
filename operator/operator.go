@@ -2,7 +2,6 @@ package operator
 
 import (
 	"awesome-start/db"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -47,13 +46,11 @@ func MarkTask(c *fiber.Ctx) error {
 }
 
 func AddTask(c *fiber.Ctx) error {
-	fmt.Print(" I am here")
 	var body db.TaskBody
 	err := c.BodyParser(&body)
 	if err != nil {
 		return nil
 	}
-	fmt.Print(" I am here")
 	task := db.CreateTask(body.Title, body.Description)
 
 	err = db.DbAddTask(task)
